@@ -2,317 +2,323 @@
 #include <string.h>
 #include <ctype.h>
 
-#define MAX 200
+#define MAX 300
 
+// -------------------- GLOBAL ANALYTICS --------------------
 int totalQueries = 0;
 int successfulQueries = 0;
 int fallbackQueries = 0;
 
-int feesCount = 0, examCount = 0, admissionCount = 0, hostelCount = 0, placementCount = 0;
+int feesCount = 0;
+int examCount = 0;
+int admissionCount = 0;
+int hostelCount = 0;
+int placementCount = 0;
 
-char lastTopic[50] = "";
-char lastYear[50] = "";
-char lastCourse[50] = "";
-int lastSem = -1;
-int fallbackCount = 0;
+// -------------------- CONTEXT --------------------
+char lastIntent[50] = "";
+char lastYear[30] = "";
+char lastSem[30] = "";
+char lastCourse[30] = "";
 
-void toLowerCase(char *str)
-{
-    for(int i = 0; str[i]; i++)
-        str[i] = tolower(str[i]);
-}
+// -------------------- FUNCTION DECLARATIONS --------------------
+void toLowerCase(char str[]);
+void trimNewline(char str[]);
+int containsWord(const char str[], const char word[]);
+void extractEntities(char input[], char year[], char sem[], char course[]);
+void detectIntent(char input[], char intent[]);
+void answerQuery(char input[]);
+void printAnalytics();
+void showMenu();
+void handoverSupport();
+void simulateChannels();
 
-int extractSemester(char *str)
-{
-    for(int i = 0; str[i]; i++)
-    {
-        if(str[i] == 's' && str[i+1] == 'e' && str[i+2] == 'm')
-        {
-            int j = i + 3;
-            while(str[j] == ' ') j++;
-            if(isdigit(str[j]))
-                return str[j] - '0';
+// -------------------- MAIN --------------------
+int main() {
+    int choice;
+    char input[MAX];
+
+    while (1) {
+        showMenu();
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+        getchar(); // consume newline
+
+        switch (choice) {
+            case 1:
+                printf("\n=== Student Query Chatbot ===\n");
+                printf("Type your question (type 'exit' to stop)\n\n");
+
+                while (1) {
+                    printf("You: ");
+                    fgets(input, sizeof(input), stdin);
+                    trimNewline(input);
+
+                    if (strcmp(input, "exit") == 0 || strcmp(input, "EXIT") == 0)
+                        break;
+
+                    answerQuery(input);
+                    printf("\n");
+                }
+                break;
+
+            case 2:
+                simulateChannels();
+                break;
+
+            case 3:
+                printAnalytics();
+                break;
+
+            case 4:
+                printf("\nExiting program...\n");
+                return 0;
+
+            default:
+                printf("\nInvalid choice. Please try again.\n");
         }
     }
-    return -1;
-}
 
-void extractCourse(char *str, char course[])
-{
-    char *courses[] = {"cs", "ai", "it", "ece", "me", "ce"};
-    int n = 6;
-
-    for(int i = 0; i < n; i++)
-    {
-        if(strstr(str, courses[i]))
-        {
-            strcpy(course, courses[i]);
-            return;
-        }
-    }
-    strcpy(course, "");
-}
-
-void extractDateKeyword(char *str, char dateWord[])
-{
-    char *dates[] = {"today","tomorrow","monday","tuesday","wednesday","thursday","friday","saturday","sunday"};
-    int n = 9;
-
-    for(int i = 0; i < n; i++)
-    {
-        if(strstr(str, dates[i]))
-        {
-            strcpy(dateWord, dates[i]);
-            return;
-        }
-    }
-    strcpy(dateWord, "scheduled date");
-}
-
-void extractYear(char *str, char year[])
-{
-    if(strstr(str, "first")) strcpy(year, "1st year");
-    else if(strstr(str, "second")) strcpy(year, "2nd year");
-    else if(strstr(str, "third")) strcpy(year, "3rd year");
-    else if(strstr(str, "fourth")) strcpy(year, "4th year");
-    else strcpy(year, "");
-}
-
-int detectIntent(char *str)
-{
-    if(strstr(str, "fees") || strstr(str, "fee")) return 1;
-    if(strstr(str, "admission")) return 2;
-    if(strstr(str, "exam")) return 3;
-    if(strstr(str, "hostel")) return 4;
-    if(strstr(str, "placement")) return 5;
     return 0;
 }
 
-void updateAnalytics(int intent, int success)
-{
-    totalQueries++;
+// -------------------- MENU --------------------
+void showMenu() {
+    printf("\n=========================================\n");
+    printf("     STUDENT QUERY CHATBOT SYSTEM\n");
+    printf("=========================================\n");
+    printf("1. Start Chatbot\n");
+    printf("2. Multichannel Deployment Mockup\n");
+    printf("3. View Analytics\n");
+    printf("4. Exit\n");
+    printf("=========================================\n");
+}
 
-    if(success)
-        successfulQueries++;
-    else
-        fallbackQueries++;
-
-    switch(intent)
-    {
-        case 1: feesCount++; break;
-        case 2: admissionCount++; break;
-        case 3: examCount++; break;
-        case 4: hostelCount++; break;
-        case 5: placementCount++; break;
+// -------------------- LOWERCASE --------------------
+void toLowerCase(char str[]) {
+    int i;
+    for (i = 0; str[i] != '\0'; i++) {
+        str[i] = tolower((unsigned char)str[i]);
     }
 }
 
-void showAnalytics()
-{
+// -------------------- REMOVE NEWLINE --------------------
+void trimNewline(char str[]) {
+    int len = strlen(str);
+    if (len > 0 && str[len - 1] == '\n') {
+        str[len - 1] = '\0';
+    }
+}
+
+// -------------------- WORD CHECK --------------------
+int containsWord(const char str[], const char word[]) {
+    return strstr(str, word) != NULL;
+}
+
+// -------------------- ENTITY EXTRACTION --------------------
+void extractEntities(char input[], char year[], char sem[], char course[]) {
+    strcpy(year, "");
+    strcpy(sem, "");
+    strcpy(course, "");
+
+    // Year extraction
+    if (containsWord(input, "first year") || containsWord(input, "1st year"))
+        strcpy(year, "First Year");
+    else if (containsWord(input, "second year") || containsWord(input, "2nd year"))
+        strcpy(year, "Second Year");
+    else if (containsWord(input, "third year") || containsWord(input, "3rd year"))
+        strcpy(year, "Third Year");
+    else if (containsWord(input, "final year") || containsWord(input, "fourth year") || containsWord(input, "4th year"))
+        strcpy(year, "Final Year");
+
+    // Semester extraction
+    if (containsWord(input, "sem 1") || containsWord(input, "semester 1"))
+        strcpy(sem, "SEM 1");
+    else if (containsWord(input, "sem 2") || containsWord(input, "semester 2"))
+        strcpy(sem, "SEM 2");
+    else if (containsWord(input, "sem 3") || containsWord(input, "semester 3"))
+        strcpy(sem, "SEM 3");
+    else if (containsWord(input, "sem 4") || containsWord(input, "semester 4"))
+        strcpy(sem, "SEM 4");
+    else if (containsWord(input, "sem 5") || containsWord(input, "semester 5"))
+        strcpy(sem, "SEM 5");
+    else if (containsWord(input, "sem 6") || containsWord(input, "semester 6"))
+        strcpy(sem, "SEM 6");
+    else if (containsWord(input, "sem 7") || containsWord(input, "semester 7"))
+        strcpy(sem, "SEM 7");
+    else if (containsWord(input, "sem 8") || containsWord(input, "semester 8"))
+        strcpy(sem, "SEM 8");
+
+    // Course extraction
+    if (containsWord(input, "cs") || containsWord(input, "computer science") || containsWord(input, "cse"))
+        strcpy(course, "Computer Science");
+    else if (containsWord(input, "it"))
+        strcpy(course, "Information Technology");
+    else if (containsWord(input, "mechanical"))
+        strcpy(course, "Mechanical");
+    else if (containsWord(input, "civil"))
+        strcpy(course, "Civil");
+    else if (containsWord(input, "electrical"))
+        strcpy(course, "Electrical");
+    else if (containsWord(input, "electronics"))
+        strcpy(course, "Electronics");
+}
+
+// -------------------- INTENT DETECTION --------------------
+void detectIntent(char input[], char intent[]) {
+    strcpy(intent, "unknown");
+
+    if (containsWord(input, "fee") || containsWord(input, "fees"))
+        strcpy(intent, "fees");
+    else if (containsWord(input, "exam") || containsWord(input, "date") || containsWord(input, "timetable"))
+        strcpy(intent, "exam");
+    else if (containsWord(input, "admission") || containsWord(input, "apply") || containsWord(input, "eligibility"))
+        strcpy(intent, "admission");
+    else if (containsWord(input, "hostel") || containsWord(input, "room"))
+        strcpy(intent, "hostel");
+    else if (containsWord(input, "placement") || containsWord(input, "company") || containsWord(input, "job"))
+        strcpy(intent, "placement");
+    else if (containsWord(input, "hello") || containsWord(input, "hi") || containsWord(input, "hey"))
+        strcpy(intent, "greeting");
+}
+
+// -------------------- HANDOVER --------------------
+void handoverSupport() {
+    printf("Bot: I could not fully understand your query.\n");
+    printf("Bot: Please contact student helpdesk at: support@college.edu\n");
+    printf("Bot: Or visit the admin office / inquiry desk.\n");
+}
+
+// -------------------- ANSWER ENGINE --------------------
+void answerQuery(char input[]) {
+    char temp[MAX];
+    char intent[50];
+    char year[30], sem[30], course[30];
+
+    strcpy(temp, input);
+    toLowerCase(temp);
+
+    totalQueries++;
+
+    detectIntent(temp, intent);
+    extractEntities(temp, year, sem, course);
+
+    // ---------------- CONTEXT HANDLING ----------------
+    // If user gives follow-up like "For third year?"
+    if (strlen(intent) == 0 || strcmp(intent, "unknown") == 0) {
+        if (strlen(lastIntent) > 0) {
+            strcpy(intent, lastIntent);
+        }
+    }
+
+    if (strlen(year) == 0 && strlen(lastYear) > 0)
+        strcpy(year, lastYear);
+
+    if (strlen(sem) == 0 && strlen(lastSem) > 0)
+        strcpy(sem, lastSem);
+
+    if (strlen(course) == 0 && strlen(lastCourse) > 0)
+        strcpy(course, lastCourse);
+
+    // Save latest context if newly found
+    if (strcmp(intent, "unknown") != 0)
+        strcpy(lastIntent, intent);
+
+    if (strlen(year) > 0)
+        strcpy(lastYear, year);
+
+    if (strlen(sem) > 0)
+        strcpy(lastSem, sem);
+
+    if (strlen(course) > 0)
+        strcpy(lastCourse, course);
+
+    // ---------------- RESPONSES ----------------
+    if (strcmp(intent, "greeting") == 0) {
+        printf("Bot: Hello! I can help you with fees, exams, admissions, hostel, and placements.");
+        successfulQueries++;
+    }
+
+    else if (strcmp(intent, "fees") == 0) {
+        printf("Bot: Fee details:\n");
+        if (strlen(year) > 0)
+            printf("Bot: %s tuition fee is approximately Rs. 85,000 per year.\n", year);
+        else
+            printf("Bot: Tuition fee is approximately Rs. 85,000 per year.\n");
+        printf("Bot: You can pay fees online through the college portal.");
+        successfulQueries++;
+        feesCount++;
+    }
+
+    else if (strcmp(intent, "exam") == 0) {
+        printf("Bot: Exam information:\n");
+        if (strlen(sem) > 0 && strlen(course) > 0)
+            printf("Bot: %s %s exams are expected from 15 May 2026.\n", sem, course);
+        else if (strlen(sem) > 0)
+            printf("Bot: %s exams are expected from 15 May 2026.\n", sem);
+        else if (strlen(year) > 0)
+            printf("Bot: %s exam timetable will be released soon.\n", year);
+        else
+            printf("Bot: The exam timetable will be announced on the college notice board and portal.\n");
+
+        successfulQueries++;
+        examCount++;
+    }
+
+    else if (strcmp(intent, "admission") == 0) {
+        printf("Bot: Admission details:\n");
+        printf("Bot: Admissions are open from 1 June 2026.\n");
+        printf("Bot: Required documents include mark sheets, ID proof, and passport size photos.\n");
+        printf("Bot: Apply through the official college admission portal.");
+        successfulQueries++;
+        admissionCount++;
+    }
+
+    else if (strcmp(intent, "hostel") == 0) {
+        printf("Bot: Hostel details:\n");
+        printf("Bot: Hostel facility is available for boys and girls.\n");
+        printf("Bot: Approximate hostel fee is Rs. 45,000 per year including mess.\n");
+        printf("Bot: Contact the hostel office for room allotment.");
+        successfulQueries++;
+        hostelCount++;
+    }
+
+    else if (strcmp(intent, "placement") == 0) {
+        printf("Bot: Placement details:\n");
+        printf("Bot: Top recruiters include TCS, Infosys, Wipro, and Capgemini.\n");
+        printf("Bot: Students become eligible for placements from 6th semester onwards.\n");
+        printf("Bot: Placement training sessions are conducted regularly.");
+        successfulQueries++;
+        placementCount++;
+    }
+
+    else {
+        fallbackQueries++;
+        handoverSupport();
+    }
+}
+
+// -------------------- ANALYTICS --------------------
+void printAnalytics() {
     printf("\n========== CHATBOT ANALYTICS ==========\n");
-    printf("Total Queries Handled      : %d\n", totalQueries);
-    printf("Successful Responses       : %d\n", successfulQueries);
-    printf("Fallback / Unclear Queries : %d\n", fallbackQueries);
-
-    printf("\nIntent Breakdown:\n");
-    printf("Fees       : %d\n", feesCount);
-    printf("Admissions : %d\n", admissionCount);
-    printf("Exams      : %d\n", examCount);
-    printf("Hostel     : %d\n", hostelCount);
-    printf("Placement  : %d\n", placementCount);
-
-    int max = feesCount;
-    char mostAsked[50] = "Fees";
-
-    if(admissionCount > max) { max = admissionCount; strcpy(mostAsked, "Admissions"); }
-    if(examCount > max) { max = examCount; strcpy(mostAsked, "Exams"); }
-    if(hostelCount > max) { max = hostelCount; strcpy(mostAsked, "Hostel"); }
-    if(placementCount > max) { max = placementCount; strcpy(mostAsked, "Placement"); }
-
-    if(max > 0)
-        printf("\nMost Asked Topic           : %s\n", mostAsked);
-    else
-        printf("\nMost Asked Topic           : No data yet\n");
-
+    printf("Total Queries           : %d\n", totalQueries);
+    printf("Successful Queries      : %d\n", successfulQueries);
+    printf("Fallback Queries        : %d\n", fallbackQueries);
+    printf("---------------------------------------\n");
+    printf("Fees Queries            : %d\n", feesCount);
+    printf("Exam Queries            : %d\n", examCount);
+    printf("Admission Queries       : %d\n", admissionCount);
+    printf("Hostel Queries          : %d\n", hostelCount);
+    printf("Placement Queries       : %d\n", placementCount);
     printf("=======================================\n");
 }
 
-void fallback()
-{
-    fallbackCount++;
-    updateAnalytics(0, 0);
-
-    if(fallbackCount == 1)
-    {
-        printf("I am not sure I understood that. Could you please clarify your question?\n");
-        printf("You can ask about admissions, fees, exams, hostel or placements.\n");
-    }
-    else if(fallbackCount == 2)
-    {
-        printf("I am still unable to understand the query.\n");
-        printf("Try asking something like: 'What are the fees?' or 'When is SEM 5 CS exam?'\n");
-    }
-    else
-    {
-        printf("I recommend contacting a human advisor for further assistance.\n");
-        printf("Email: advisor@institute.edu\n");
-        printf("Help Desk: www.institute.edu/helpdesk\n");
-        fallbackCount = 0;
-    }
-}
-
-void respond(char *processed)
-{
-    int sem = extractSemester(processed);
-    char course[50], dateWord[50], year[50];
-    int intent = detectIntent(processed);
-
-    extractCourse(processed, course);
-    extractDateKeyword(processed, dateWord);
-    extractYear(processed, year);
-
-    if(intent == 1) strcpy(lastTopic, "fees");
-    else if(intent == 2) strcpy(lastTopic, "admission");
-    else if(intent == 3) strcpy(lastTopic, "exam");
-    else if(intent == 4) strcpy(lastTopic, "hostel");
-    else if(intent == 5) strcpy(lastTopic, "placement");
-
-    if(strlen(year) > 0) strcpy(lastYear, year);
-    if(strlen(course) > 0) strcpy(lastCourse, course);
-    if(sem != -1) lastSem = sem;
-
-    if(intent == 1)
-    {
-        printf("The fee structure ranges from 80000 to 120000 per year depending on the course.\n");
-        fallbackCount = 0;
-        updateAnalytics(intent, 1);
-        return;
-    }
-
-    if(intent == 2)
-    {
-        printf("Admissions open in June. Applications are available on the institute website.\n");
-        fallbackCount = 0;
-        updateAnalytics(intent, 1);
-        return;
-    }
-
-    if(intent == 4)
-    {
-        printf("Hostel facilities are available for both boys and girls with separate accommodation.\n");
-        fallbackCount = 0;
-        updateAnalytics(intent, 1);
-        return;
-    }
-
-    if(intent == 5)
-    {
-        printf("The placement cell works with companies like TCS, Infosys and Wipro.\n");
-        fallbackCount = 0;
-        updateAnalytics(intent, 1);
-        return;
-    }
-
-    if(intent == 3 || strcmp(lastTopic, "exam") == 0)
-    {
-        if(sem != -1 && strlen(course) > 0)
-        {
-            printf("Exam schedule for SEM %d %s course is %s.\n", sem, course, dateWord);
-        }
-        else if(strlen(year) > 0)
-        {
-            printf("The exam schedule for %s students will be announced next month.\n", year);
-        }
-        else if(lastSem != -1 && strlen(lastCourse) > 0)
-        {
-            printf("Exam schedule for SEM %d %s course is %s.\n", lastSem, lastCourse, dateWord);
-        }
-        else if(strlen(lastYear) > 0)
-        {
-            printf("The exam schedule for %s students will be announced next month.\n", lastYear);
-        }
-        else
-        {
-            printf("Which semester, course or year students are you asking about?\n");
-        }
-
-        fallbackCount = 0;
-        updateAnalytics(3, 1);
-        return;
-    }
-
-    if(strlen(year) > 0 && strcmp(lastTopic, "exam") == 0)
-    {
-        printf("The exam schedule for %s students will be announced next month.\n", year);
-        fallbackCount = 0;
-        updateAnalytics(3, 1);
-        return;
-    }
-
-    fallback();
-}
-
-void simulateChannel(char *channel)
-{
-    char input[MAX], processed[MAX];
-
-    printf("\n===== %s Chat Interface =====\n", channel);
-    printf("Type 'exit' to return to channel menu\n");
-    printf("Type 'analytics' to view chatbot analytics\n\n");
-
-    while(1)
-    {
-        printf("You: ");
-        fgets(input, sizeof(input), stdin);
-        input[strcspn(input, "\n")] = 0;
-
-        strcpy(processed, input);
-        toLowerCase(processed);
-
-        if(strcmp(processed, "exit") == 0)
-            break;
-
-        if(strcmp(processed, "analytics") == 0)
-        {
-            showAnalytics();
-            continue;
-        }
-
-        respond(processed);
-        printf("\n");
-    }
-}
-
-int main()
-{
-    int choice;
-
-    while(1)
-    {
-        printf("\n=====================================\n");
-        printf("1. Web Chatbot\n");
-        printf("2. Mobile App Chatbot\n");
-        printf("3. WhatsApp Chatbot\n");
-        printf("4. Show Analytics\n");
-        printf("5. Exit\n");
-        printf("Select channel: ");
-
-        scanf("%d", &choice);
-        getchar();
-
-        if(choice == 1)
-            simulateChannel("Web");
-        else if(choice == 2)
-            simulateChannel("Mobile App");
-        else if(choice == 3)
-            simulateChannel("WhatsApp");
-        else if(choice == 4)
-            showAnalytics();
-        else if(choice == 5)
-            break;
-        else
-            printf("Invalid option\n");
-    }
-
-    return 0;
+// -------------------- MULTICHANNEL MOCKUP --------------------
+void simulateChannels() {
+    printf("\n========== MULTICHANNEL DEPLOYMENT MOCKUP ==========\n");
+    printf("1. Web Portal   : Chatbot embedded on college website\n");
+    printf("2. Mobile App   : Chat support available inside student app\n");
+    printf("3. WhatsApp Bot : Students can ask quick queries via WhatsApp\n");
+    printf("4. CLI Version  : Console-based chatbot for project demo\n");
+    printf("===================================================\n");
 }
